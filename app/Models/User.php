@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Notifications\SendVerificationEmail;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -53,5 +54,25 @@ class User extends Authenticatable implements MustVerifyEmail
     public function sendEmailVerificationNotification(): void
     {
         $this->notify(new SendVerificationEmail);
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === UserRole::ADMIN->value;
+    }
+
+    public function isUser(): bool
+    {
+        return $this->role === UserRole::USER->value;
+    }
+
+    public function posts(): HasMany
+    {
+        return $this->hasMany(Post::class);
+    }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class);
     }
 }
