@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useFocusOnError } from '@/hooks/useFocusOnError';
 import AuthLayout from '@/layouts/auth-layout';
 
 type LoginForm = {
@@ -42,6 +43,9 @@ export default function Login({ status, canResetPassword }: LoginProps) {
         setShowPassword((prev) => !prev);
     };
 
+    // handle focus email error
+    const emailRef = useFocusOnError(errors, 'email');
+
     return (
         <AuthLayout title="Log in to your account" description="Enter your email and password below to log in">
             <Head title="Log in" />
@@ -51,6 +55,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                     <div className="grid gap-2">
                         <Label htmlFor="email">Email address</Label>
                         <Input
+                            ref={emailRef}
                             id="email"
                             type="email"
                             required
