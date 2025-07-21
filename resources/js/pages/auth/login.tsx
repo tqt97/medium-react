@@ -86,6 +86,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                                 className="pr-12"
                             />
                             <Button
+                                type="button"
                                 variant="ghost"
                                 size="icon"
                                 onClick={togglePasswordVisibility}
