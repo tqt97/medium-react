@@ -2,16 +2,30 @@ import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
+import { useAuth } from '@/hooks/useAuth';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid } from 'lucide-react';
+import { BookOpen, Folder, FolderPlus, PenSquare } from 'lucide-react';
 import AppLogo from './app-logo';
 
-const mainNavItems: NavItem[] = [
+const adminNav: NavItem[] = [
     {
-        title: 'Dashboard',
-        href: '/dashboard',
-        icon: LayoutGrid,
+        title: 'Categories',
+        href: '/categories',
+        icon: FolderPlus,
+    },
+    {
+        title: 'Blogs',
+        href: '/blog',
+        icon: PenSquare,
+    },
+];
+
+const userNav: NavItem[] = [
+    {
+        title: 'Blogs',
+        href: '/blogs',
+        icon: PenSquare,
     },
 ];
 
@@ -29,6 +43,9 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
+    const { user } = useAuth();
+    const mainNavItems: NavItem[] = user?.role === 'admin' ? adminNav : userNav;
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
