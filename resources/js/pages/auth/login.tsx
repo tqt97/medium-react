@@ -83,6 +83,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                                 value={data.password}
                                 onChange={(e) => setData('password', e.target.value)}
                                 placeholder="Password"
+                                className="pr-12"
                             />
                             <Button
                                 variant="ghost"
