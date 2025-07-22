@@ -55,11 +55,13 @@ function PaginationLink({
     className,
     isActive,
     size = "icon",
+    href,
     children,
     ...props
 }: PaginationLinkProps) {
     return (
         <Link
+            href={href}
             aria-current={isActive ? "page" : undefined}
             data-slot="pagination-link"
             data-active={isActive}

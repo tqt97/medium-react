@@ -23,8 +23,8 @@ export const generatePaginationLinks = (currentPage: number, totalPages: number,
                 </PaginationItem>,
             );
         }
-        if (2 < currentPage && currentPage < totalPages - 1) {
-            pages.push(<PaginationEllipsis />);
+        if (currentPage > 2 && currentPage < totalPages - 1) {
+            pages.push(<PaginationEllipsis key="ellipsis-before" />);
             pages.push(
                 <PaginationItem key={currentPage}>
                     <PaginationLink href="" isActive={true} preserveScroll preserveState prefetch>
@@ -33,7 +33,7 @@ export const generatePaginationLinks = (currentPage: number, totalPages: number,
                 </PaginationItem>,
             );
         }
-        pages.push(<PaginationEllipsis />);
+        pages.push(<PaginationEllipsis key="ellipsis-after" />);
         for (let i = totalPages - 1; i <= totalPages; i++) {
             pages.push(
                 <PaginationItem key={i}>
