@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('image')->nullable();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('category_id')->nullable()->constrained()->onDelete('set null');
+            $table->dateTime('published_at')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

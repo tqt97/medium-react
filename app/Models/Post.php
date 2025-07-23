@@ -20,7 +20,20 @@ class Post extends Model
         'image',
         'user_id',
         'category_id',
+        'published_at',
     ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'published_at' => 'datetime',
+        ];
+    }
 
     public function user(): BelongsTo
     {
