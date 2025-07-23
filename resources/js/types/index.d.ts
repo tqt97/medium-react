@@ -48,7 +48,7 @@ export interface Category {
     posts_count: number;
 }
 
-export interface PaginatedResponse<T = Category | null> {
+export interface PaginatedResponse<T = unknown> {
     current_page: number;
     data: T[];
     first_page_url: string;
@@ -66,4 +66,10 @@ export interface PaginatedResponse<T = Category | null> {
     prev_page_url: string | null;
     to: number;
     total: number;
+}
+
+export interface TablePaginationProps {
+    resource: PaginatedResponse;
+    noItemsText?: string;
+    singlePageText?: string;
 }
