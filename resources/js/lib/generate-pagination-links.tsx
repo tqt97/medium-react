@@ -45,7 +45,7 @@ export const generatePaginationLinks = (currentPage: number, totalPages: number,
             pages.push(<PaginationEllipsis key="ellipsis-start" />);
             pages.push(
                 <PaginationItem key={`page-${normalizedPage}`}>
-                    <PaginationLink href="" isActive={true} preserveScroll preserveState prefetch>
+                    <PaginationLink href={`${path}${separator}${pageQuery}=${normalizedPage}`} isActive={true} preserveScroll preserveState prefetch>
                         {normalizedPage}
                     </PaginationLink>
                 </PaginationItem>,
