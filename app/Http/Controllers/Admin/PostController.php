@@ -93,6 +93,7 @@ class PostController extends Controller
 
     private function canAccess(Post $post): bool
     {
-        return $post->id !== auth()->user()->id || ! auth()->user()->isAdmin();
+        return $post->id !== auth()->user()->id || auth()->user()->isAdmin();
     }
 }
+
