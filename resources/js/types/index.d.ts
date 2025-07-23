@@ -29,9 +29,9 @@ export interface SharedData {
     ziggy: Config & { location: string };
     sidebarOpen: boolean;
     flash: {
-        success: string | null;
-        error: string | null;
-        message: string | null;
+        success: unknown | null;
+        error: unknown | null;
+        message: unknown | null;
     };
     [key: string]: unknown;
 }
