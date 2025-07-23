@@ -5,8 +5,9 @@ export const generatePaginationLinks = (currentPage: number, totalPages: number,
     const pages: JSX.Element[] = [];
     const normalizedPage = Math.max(1, Math.min(currentPage, totalPages));
     const separator = path.includes('?') ? '&' : '?';
+    const maxPageEllipsis = 12;
 
-    if (totalPages <= 6) {
+    if (totalPages <= maxPageEllipsis) {
         for (let i = 1; i <= totalPages; i++) {
             pages.push(
                 <PaginationItem key={`page-${i}`}>

@@ -11,7 +11,7 @@ import AppLogo from './app-logo';
 const adminNav: NavItem[] = [
     {
         title: 'Categories',
-        href: '/categories',
+        href: '/admin/categories',
         icon: FolderPlus,
     },
     {
@@ -22,6 +22,11 @@ const adminNav: NavItem[] = [
 ];
 
 const userNav: NavItem[] = [
+    {
+        title: 'Categories',
+        href: '/admin/categories',
+        icon: FolderPlus,
+    },
     {
         title: 'Blogs',
         href: '/blogs',
