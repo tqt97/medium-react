@@ -62,7 +62,7 @@ class PostController extends Controller
         try {
             $post->update($request->validated());
 
-            return to_route('admin.posts.index')->with('error', 'Permission denied.');
+            return to_route('admin.posts.index')->with('error', 'Update post successfully!');
 
         } catch (Exception $e) {
             Log::error("Update post id {$post->id} fail:".$e->getMessage());
@@ -96,4 +96,3 @@ class PostController extends Controller
         return $post->id !== auth()->user()->id || auth()->user()->isAdmin();
     }
 }
-

@@ -29,7 +29,6 @@ class UpdatePostRequest extends FormRequest
             'excerpt' => ['nullable', 'string', 'max:255'],
             'content' => ['required'],
             'image' => ['bail', 'nullable', 'image', 'mimes:jpg,png,jpeg', 'max:2048'],
-            'user_id' => ['exists:users,id'],
             'category_id' => ['nullable', 'exists:categories,id'],
             'published_at' => ['nullable'],
         ];
@@ -38,7 +37,6 @@ class UpdatePostRequest extends FormRequest
     public function prepareForValidation()
     {
         $this->merge([
-            'user_id' => auth()->user()->id,
             'slug' => Str::slug($this->title),
         ]);
     }
