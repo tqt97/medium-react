@@ -53,7 +53,15 @@ class CategoryController extends Controller
         try {
             $category->update($request->validated());
 
-            return redirect()->route('admin.categories.index')->with('success', 'Category has been updated successfully!');
+            $redirectParams = [];
+            $page = $request->query('page');
+
+            if ($page && intval($page) > 1) {
+                $redirectParams['page'] = $page;
+            }
+
+            return redirect()->route('admin.categories.index', $redirectParams)
+                ->with('success', 'Category has been updated successfully!');
         } catch (Throwable $th) {
             Log::error($th);
 

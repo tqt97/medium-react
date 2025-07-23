@@ -1,12 +1,14 @@
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/table-pagination';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AppLayout from '@/layouts/app-layout';
 import { Category, PaginatedResponse, type BreadcrumbItem } from '@/types';
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
 import { useState } from 'react';
 import { toast, Toaster } from 'sonner';
@@ -21,6 +23,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function CategoriesPage({ categories }: { categories: PaginatedResponse<Category> }) {
     const [showModal, setShowModal] = useState(false);
     const [editCategory, setEditCategory] = useState<Category | null>(null);
+    const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; id?: number }>({ show: false });
     const {
         data,
         setData,
@@ -33,50 +36,45 @@ export default function CategoriesPage({ categories }: { categories: PaginatedRe
         name: '',
     });
 
+    const handleDelete = (category: Category) => {
+        if (category.posts_count > 0) {
+            toast.warning('Category has posts. Can not delete');
+            return;
+        }
+        setDeleteConfirm({ show: true, id: category.id });
+    };
+
     const handleAdd = () => {
         setEditCategory(null);
-        setData({ name: '' });
         reset();
+        setData({ name: '' });
         setShowModal(true);
     };
 
     const handleEdit = (category: Category) => {
         setEditCategory(category);
-        setData({ name: category.name });
         reset();
+        setData({ name: category.name });
         setShowModal(true);
-    };
-
-    const handleDelete = (id: number) => {
-        if (confirm('Are you sure you want to delete this category?')) {
-            destroy(`/admin/categories/${id}`, {
-                onSuccess: () => {
-                    reset();
-                    toast.success('Category deleted successfully');
-                },
-                onError: (errors) => {
-                    toast.error(errors.error || 'Failed to delete category');
-                },
-            });
-        }
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentPage = urlParams.get('page');
         if (editCategory) {
-            put(`/admin/categories/${editCategory.id}`, {
+            let url = `/admin/categories/${editCategory.id}`;
+            if (currentPage) {
+                url = url + `?page=${currentPage}`;
+            }
+
+            put(url, {
                 preserveScroll: true,
                 preserveState: true,
                 onSuccess: () => {
                     setShowModal(false);
                     reset();
                     toast.success('Category updated successfully');
-                    router.visit('/admin/categories', {
-                        preserveScroll: true,
-                        preserveState: true,
-                        only: ['categories'],
-                    });
                 },
                 onError: (errors) => {
                     toast.error(errors.name || 'Failed to update category');
@@ -104,6 +102,22 @@ export default function CategoriesPage({ categories }: { categories: PaginatedRe
             ...prev,
             [name]: value,
         }));
+    };
+
+    const confirmDelete = () => {
+        if (deleteConfirm.id) {
+            destroy(`/admin/categories/${deleteConfirm.id}`, {
+                onSuccess: () => {
+                    setDeleteConfirm({ show: false, id: undefined });
+                    reset();
+                    toast.success('Category deleted successfully');
+                },
+                onError: (errors) => {
+                    setDeleteConfirm({ show: false, id: undefined });
+                    toast.error(errors.error || 'Failed to delete category');
+                },
+            });
+        }
     };
 
     return (
@@ -136,14 +150,31 @@ export default function CategoriesPage({ categories }: { categories: PaginatedRe
                                             <Button variant="outline" size="sm" onClick={() => handleEdit(category)} className="cursor-pointer">
                                                 Edit
                                             </Button>
-                                            <Button
-                                                variant="destructive"
-                                                size="sm"
-                                                onClick={() => handleDelete(category.id)}
-                                                className="cursor-pointer"
-                                            >
-                                                Delete
-                                            </Button>
+                                            <TooltipProvider delayDuration={0}>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <span>
+                                                            <Button
+                                                                variant="destructive"
+                                                                size="sm"
+                                                                onClick={() => handleDelete(category)}
+                                                                disabled={category.posts_count > 0}
+                                                                className="flex cursor-pointer gap-2"
+                                                            >
+                                                                Delete
+                                                            </Button>
+                                                        </span>
+                                                    </TooltipTrigger>
+                                                    {category.posts_count > 0 && (
+                                                        <TooltipContent>
+                                                            <p>
+                                                                Category has {category.posts_count} {category.posts_count > 1 ? 'posts' : 'post'}. Can
+                                                                not delete this category!
+                                                            </p>
+                                                        </TooltipContent>
+                                                    )}
+                                                </Tooltip>
+                                            </TooltipProvider>
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -151,10 +182,12 @@ export default function CategoriesPage({ categories }: { categories: PaginatedRe
                         </TableBody>
                     </Table>
                 </div>
+
                 {/* Pagination */}
                 <div className="flex-end mt-4 flex justify-end">
                     <TablePagination resource={categories} />
                 </div>
+
                 {/* Add/Edit Category Modal */}
                 <Dialog open={showModal} onOpenChange={setShowModal}>
                     <DialogContent className="sm:max-w-[425px]">
@@ -181,6 +214,18 @@ export default function CategoriesPage({ categories }: { categories: PaginatedRe
                         </form>
                     </DialogContent>
                 </Dialog>
+
+                {/* Delete confirm dialog */}
+                <ConfirmDialog
+                    open={deleteConfirm.show}
+                    onOpenChange={(open) => setDeleteConfirm({ show: open, id: undefined })}
+                    onConfirm={confirmDelete}
+                    loading={processing}
+                    title="Confirm Deletion"
+                    description="Are you sure you want to delete this category? This action cannot be undo."
+                    confirmLabel="Delete"
+                    confirmVariant="destructive"
+                />
             </div>
         </AppLayout>
     );
