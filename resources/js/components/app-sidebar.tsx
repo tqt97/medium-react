@@ -15,8 +15,8 @@ const adminNav: NavItem[] = [
         icon: FolderPlus,
     },
     {
-        title: 'Blogs',
-        href: '/blog',
+        title: 'Posts',
+        href: '/admin/posts',
         icon: PenSquare,
     },
 ];
@@ -28,8 +28,8 @@ const userNav: NavItem[] = [
         icon: FolderPlus,
     },
     {
-        title: 'Blogs',
-        href: '/blogs',
+        title: 'Posts',
+        href: '/admin/posts',
         icon: PenSquare,
     },
 ];

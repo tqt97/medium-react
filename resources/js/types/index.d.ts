@@ -78,3 +78,23 @@ export interface TablePaginationProps {
     noItemsText?: string;
     singlePageText?: string;
 }
+
+export interface Post {
+    id: number;
+    title: string;
+    slug: string;
+    content: string;
+    category_id: number;
+    user_id: number;
+    category: Category;
+    published_at: string | null;
+    comments: Comment[];
+    comments_count: number;
+}
+
+export interface Comment {
+    id: number;
+    content: string;
+    user: User;
+    created_at: string;
+}
