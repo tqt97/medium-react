@@ -1,21 +1,26 @@
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/table-pagination';
-import { Textarea } from '@/components/ui/textarea';
-import { useAuth } from '@/hooks/useAuth';
 import AppLayout from '@/layouts/app-layout';
 import { Category, PaginatedResponse, Post, type BreadcrumbItem } from '@/types';
-import { Head, router } from '@inertiajs/react';
+import { notify } from '@/utils/notify';
+import { Head, useForm } from '@inertiajs/react';
 import { useState } from 'react';
-import { toast, Toaster } from 'sonner';
+import CommentsModal from './parts/comments';
+import PostFormModal from './parts/form';
+import PostTableRow from './parts/table';
 
 interface PostsPageProps {
     posts: PaginatedResponse<Post>;
     categories: Category[];
+}
+
+interface FormData {
+    title: string;
+    content: string;
+    category_id: string;
+    published_at: string;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -30,50 +35,47 @@ export default function PostsPage({ posts, categories }: PostsPageProps) {
     const [showCommentsModal, setShowCommentsModal] = useState(false);
     const [selectedPost, setSelectedPost] = useState<Post | null>(null);
     const [editPost, setEditPost] = useState<Post | null>(null);
-    const auth = useAuth();
-    const [formData, setFormData] = useState({
+    const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; id?: number }>({ show: false });
+    const [recentlyUpdatedId, setRecentlyUpdatedId] = useState<number | null>(null);
+
+    const {
+        data,
+        setData,
+        post,
+        put,
+        delete: destroy,
+        processing,
+        reset,
+        errors,
+    } = useForm<Required<FormData>>({
         title: '',
         content: '',
         category_id: '',
         published_at: '',
     });
 
-    const handleAdd = () => {
-        setEditPost(null);
-        setFormData({
-            title: '',
-            content: '',
-            category_id: '',
-            published_at: '',
+    const handleOpenForm = (post?: Post) => {
+        setEditPost(post ?? null);
+        setData({
+            title: post?.title || '',
+            content: post?.content || '',
+            category_id: post?.category_id?.toString() || '',
+            published_at: post?.published_at || '',
         });
         setShowModal(true);
     };
 
-    const handleEdit = (post: Post) => {
-        setEditPost(post);
-        setFormData({
-            title: post.title,
-            content: post.content,
-            category_id: post.category_id.toString(),
-            published_at: post.published_at || '',
-        });
-        setShowModal(true);
-    };
-
-    const handleDelete = (id: number) => {
-        if (confirm('Are you sure you want to delete this post?')) {
-            router.delete(`/admin/posts/${id}`, {
+    const confirmDelete = () => {
+        if (deleteConfirm.id) {
+            destroy(`/admin/posts/${deleteConfirm.id}`, {
                 onSuccess: () => {
-                    toast.success('Post deleted successfully', {
-                        duration: 3000,
-                        position: 'top-right',
-                    });
+                    setDeleteConfirm({ show: false, id: undefined });
+                    reset();
+                    notify('success', 'Post deleted successfully');
                 },
-                onError: () => {
-                    toast.error('Failed to delete post', {
-                        duration: 3000,
-                        position: 'top-right',
-                    });
+                onError: (errors) => {
+                    setDeleteConfirm({ show: false, id: undefined });
+                    notify('error', errors.error || 'Failed to delete post');
                 },
             });
         }
@@ -81,37 +83,37 @@ export default function PostsPage({ posts, categories }: PostsPageProps) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (processing) return;
 
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentPage = urlParams.get('page');
         if (editPost) {
-            router.put(`/admin/posts/${editPost.id}`, formData, {
+            let url = `/admin/posts/${editPost.id}`;
+            if (currentPage) {
+                url = url + `?page=${currentPage}`;
+            }
+            put(url, {
                 onSuccess: () => {
+                    setRecentlyUpdatedId(editPost.id);
                     setShowModal(false);
-                    toast.success('Post updated successfully', {
-                        duration: 3000,
-                        position: 'top-right',
-                    });
+                    reset();
+                    notify('success', 'Post updated successfully');
+
+                    setTimeout(() => setRecentlyUpdatedId(null), 3000);
                 },
                 onError: () => {
-                    toast.error('Failed to update post', {
-                        duration: 3000,
-                        position: 'top-right',
-                    });
+                    notify('error', 'Failed to update post');
                 },
             });
         } else {
-            router.post('/admin/posts', formData, {
+            post('/admin/posts', {
                 onSuccess: () => {
                     setShowModal(false);
-                    toast.success('Post created successfully', {
-                        duration: 3000,
-                        position: 'top-right',
-                    });
+                    reset();
+                    notify('success', 'Post created successfully');
                 },
                 onError: () => {
-                    toast.error('Failed to create post', {
-                        duration: 3000,
-                        position: 'top-right',
-                    });
+                    notify('error', 'Failed to create post');
                 },
             });
         }
@@ -119,14 +121,14 @@ export default function PostsPage({ posts, categories }: PostsPageProps) {
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({
+        setData((prev) => ({
             ...prev,
             [name]: value,
         }));
     };
 
     const handleSelectChange = (name: string, value: string) => {
-        setFormData((prev) => ({
+        setData((prev) => ({
             ...prev,
             [name]: value,
         }));
@@ -137,15 +139,18 @@ export default function PostsPage({ posts, categories }: PostsPageProps) {
         setShowCommentsModal(true);
     };
 
+    const handleDelete = (post: Post) => {
+        setDeleteConfirm({ show: true, id: post.id });
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Posts" />
-            <Toaster richColors closeButton />
             <div className="flex flex-col gap-4 p-4">
                 <div className="mb-4 flex items-center justify-between">
-                    <h1 className="text-2xl font-bold">Posts</h1>{' '}
-                    <Button onClick={handleAdd} className="cursor-pointer">
-                        Add Blog
+                    <h1 className="text-2xl font-bold">Posts</h1>
+                    <Button onClick={() => handleOpenForm()} className="cursor-pointer">
+                        Add Post
                     </Button>
                 </div>
                 <div className="rounded-md border">
@@ -161,126 +166,52 @@ export default function PostsPage({ posts, categories }: PostsPageProps) {
                         </TableHeader>
                         <TableBody>
                             {posts.data.map((post: Post) => (
-                                <TableRow key={post.id}>
-                                    <TableCell>{post.title}</TableCell>
-                                    <TableCell>{post.category?.name}</TableCell>
-                                    <TableCell>{post.published_at ? new Date(post.published_at).toLocaleDateString() : '-'}</TableCell>
-                                    <TableCell>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => handleShowComments(post)}
-                                            className="cursor-pointer text-blue-600 hover:text-blue-800"
-                                        >
-                                            {post.comments_count} {post.comments_count > 1 ? 'comments' : 'comment'}
-                                        </Button>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex gap-2">
-                                            <Button variant="outline" size="sm" onClick={() => handleEdit(post)} className="cursor-pointer">
-                                                Edit
-                                            </Button>
-                                            <Button
-                                                variant="destructive"
-                                                size="sm"
-                                                onClick={() => handleDelete(post.id)}
-                                                className="cursor-pointer"
-                                                disabled={post.user_id !== auth.user?.id && !auth.user?.role.includes('admin')}
-                                            >
-                                                Delete
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
+                                <PostTableRow
+                                    key={post.id}
+                                    post={post}
+                                    onEdit={handleOpenForm}
+                                    onDelete={handleDelete}
+                                    onShowComments={handleShowComments}
+                                    isHighlighted={post.id === recentlyUpdatedId}
+                                />
                             ))}
                         </TableBody>
                     </Table>
                 </div>
+
                 {/* Pagination */}
                 <div className="flex-end mt-4 flex justify-end">
                     <TablePagination resource={posts} />
                 </div>
+
                 {/* Comments Modal */}
-                <Dialog open={showCommentsModal} onOpenChange={setShowCommentsModal}>
-                    <DialogContent className="w-full max-w-[800px] sm:max-w-[800px]">
-                        <DialogHeader>
-                            <DialogTitle>Comments for {selectedPost?.title}</DialogTitle>
-                            <DialogDescription>View all comments on this Post </DialogDescription>
-                        </DialogHeader>
-                        <div className="max-h-[400px] overflow-y-auto">
-                            {selectedPost?.comments.map((comment) => (
-                                <div key={comment.id} className="border-b py-3 last:border-b-0">
-                                    <div className="mb-2 flex items-start justify-between">
-                                        <div className="font-medium">{comment.user.name}</div>
-                                        <div className="text-sm text-gray-500">{new Date(comment.created_at).toLocaleDateString()}</div>
-                                    </div>
-                                    <p className="text-sm text-gray-700">{comment.content}</p>
-                                </div>
-                            ))}
-                            {selectedPost?.comments.length === 0 && <div className="py-4 text-center text-gray-500">No comments yet </div>}
-                        </div>
-                    </DialogContent>
-                </Dialog>
-                <Dialog open={showModal} onOpenChange={setShowModal}>
-                    <DialogContent className="w-full max-w-[800px] sm:max-w-[1400px]">
-                        <DialogHeader>
-                            <DialogTitle>{editPost ? 'Edit Blog' : 'Add New Blog'}</DialogTitle>
-                            <DialogDescription>
-                                {editPost ? 'Make changes to your blog post here.' : 'Create a new blog post here.'}
-                            </DialogDescription>
-                        </DialogHeader>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="title">Title</Label>
-                                <Input id="title" name="title" value={formData.title} onChange={handleInputChange} required />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="content">Content</Label>
-                                <Textarea
-                                    id="content"
-                                    name="content"
-                                    value={formData.content}
-                                    onChange={handleInputChange}
-                                    required
-                                    className="min-h-[200px]"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="category">Category</Label>
-                                <Select value={formData.category_id} onValueChange={(value) => handleSelectChange('category_id', value)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a category" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {categories.map((category) => (
-                                            <SelectItem key={category.id} value={category.id.toString()}>
-                                                {category.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="published_at">Published At</Label>
-                                <Input
-                                    id="published_at"
-                                    name="published_at"
-                                    type="datetime-local"
-                                    value={formData.published_at}
-                                    onChange={handleInputChange}
-                                />
-                            </div>
-                            <DialogFooter>
-                                <Button type="button" variant="outline" onClick={() => setShowModal(false)} className="cursor-pointer">
-                                    Cancel
-                                </Button>
-                                <Button type="submit" className="cursor-pointer">
-                                    {editPost ? 'Update' : 'Create'}
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                    </DialogContent>
-                </Dialog>
+                <CommentsModal open={showCommentsModal} onOpenChange={setShowCommentsModal} post={selectedPost} />
+
+                {/* Form Modal */}
+                <PostFormModal
+                    open={showModal}
+                    editPost={editPost}
+                    categories={categories}
+                    data={data}
+                    onChange={handleInputChange}
+                    onSelectChange={handleSelectChange}
+                    onSubmit={handleSubmit}
+                    onClose={() => setShowModal(false)}
+                    processing={processing}
+                    errors={errors}
+                />
+
+                {/* Delete confirm dialog */}
+                <ConfirmDialog
+                    open={deleteConfirm.show}
+                    onOpenChange={(open) => setDeleteConfirm({ show: open, id: undefined })}
+                    onConfirm={confirmDelete}
+                    loading={processing}
+                    title="Confirm Deletion"
+                    description="Are you sure you want to delete this post? This action cannot be undone."
+                    confirmLabel="Delete"
+                    confirmVariant="destructive"
+                />
             </div>
         </AppLayout>
     );
