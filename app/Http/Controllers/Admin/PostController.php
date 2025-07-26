@@ -62,7 +62,14 @@ class PostController extends Controller
         try {
             $post->update($request->validated());
 
-            return to_route('admin.posts.index')->with('error', 'Update post successfully!');
+            $redirectParams = [];
+            $page = $request->query('page');
+
+            if ($page && intval($page) > 1) {
+                $redirectParams['page'] = $page;
+            }
+
+            return to_route('admin.posts.index', $redirectParams)->with('error', 'Update post successfully!');
 
         } catch (Exception $e) {
             Log::error("Update post id {$post->id} fail:".$e->getMessage());

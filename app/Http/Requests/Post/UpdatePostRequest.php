@@ -24,7 +24,7 @@ class UpdatePostRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => ['bail', 'required', 'string', 'min:3', 'max:255'],
+            'title' => ['bail', 'required', 'string', 'min:3', 'max:255', Rule::unique('posts', 'title')->ignore($this->route('post')->id)],
             'slug' => ['bail', 'string', 'max:255', Rule::unique('posts', 'slug')->ignore($this->route('post')->id)],
             'excerpt' => ['nullable', 'string', 'max:255'],
             'content' => ['required'],
