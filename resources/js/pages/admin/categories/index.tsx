@@ -8,10 +8,10 @@ import { TablePagination } from '@/components/ui/table-pagination';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AppLayout from '@/layouts/app-layout';
 import { Category, PaginatedResponse, type BreadcrumbItem } from '@/types';
+import { notify } from '@/utils/notify';
 import { Head, useForm } from '@inertiajs/react';
-import { LoaderCircle } from 'lucide-react';
+import { LoaderCircle, Plus } from 'lucide-react';
 import { useState } from 'react';
-import { toast, Toaster } from 'sonner';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -24,6 +24,7 @@ export default function CategoriesPage({ categories }: { categories: PaginatedRe
     const [showModal, setShowModal] = useState(false);
     const [editCategory, setEditCategory] = useState<Category | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; id?: number }>({ show: false });
+    const [recentlyUpdatedId, setRecentlyUpdatedId] = useState<number | null>(null);
     const {
         data,
         setData,
@@ -38,28 +39,25 @@ export default function CategoriesPage({ categories }: { categories: PaginatedRe
 
     const handleDelete = (category: Category) => {
         if (category.posts_count > 0) {
-            toast.warning('Category has posts. Can not delete');
+            notify('warning', 'Category has posts. Can not delete');
             return;
         }
         setDeleteConfirm({ show: true, id: category.id });
     };
 
-    const handleAdd = () => {
-        setEditCategory(null);
+    const handleOpenForm = (category?: Category) => {
+        setEditCategory(category ?? null);
         reset();
-        setData({ name: '' });
-        setShowModal(true);
-    };
-
-    const handleEdit = (category: Category) => {
-        setEditCategory(category);
-        reset();
-        setData({ name: category.name });
+        setData({
+            name: category?.name ?? '',
+        });
         setShowModal(true);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (processing) return;
+
         const urlParams = new URLSearchParams(window.location.search);
         const currentPage = urlParams.get('page');
         if (editCategory) {
@@ -72,12 +70,14 @@ export default function CategoriesPage({ categories }: { categories: PaginatedRe
                 preserveScroll: true,
                 preserveState: true,
                 onSuccess: () => {
+                    setRecentlyUpdatedId(editCategory.id);
                     setShowModal(false);
                     reset();
-                    toast.success('Category updated successfully');
+                    notify('success', 'Category updated successfully');
+                    setTimeout(() => setRecentlyUpdatedId(null), 3000);
                 },
                 onError: (errors) => {
-                    toast.error(errors.name || 'Failed to update category');
+                    notify('error', errors.name || 'Failed to update category');
                 },
             });
         } else {
@@ -87,10 +87,10 @@ export default function CategoriesPage({ categories }: { categories: PaginatedRe
                 onSuccess: () => {
                     setShowModal(false);
                     reset();
-                    toast.success('Category created successfully');
+                    notify('success', 'Category created successfully');
                 },
                 onError: (errors) => {
-                    toast.error(errors.name || 'Failed to create category');
+                    notify('error', errors.name || 'Failed to create category');
                 },
             });
         }
@@ -110,11 +110,11 @@ export default function CategoriesPage({ categories }: { categories: PaginatedRe
                 onSuccess: () => {
                     setDeleteConfirm({ show: false, id: undefined });
                     reset();
-                    toast.success('Category deleted successfully');
+                    notify('success', 'Category deleted successfully');
                 },
                 onError: (errors) => {
                     setDeleteConfirm({ show: false, id: undefined });
-                    toast.error(errors.error || 'Failed to delete category');
+                    notify('error', errors.error || 'Failed to delete category');
                 },
             });
         }
@@ -123,12 +123,11 @@ export default function CategoriesPage({ categories }: { categories: PaginatedRe
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Categories" />
-            <Toaster richColors closeButton position="top-right" />
             <div className="flex flex-col gap-4 p-4">
                 <div className="mb-4 flex items-center justify-between">
                     <h1 className="text-2xl font-bold">Categories</h1>
-                    <Button onClick={handleAdd} className="cursor-pointer">
-                        Add Category
+                    <Button onClick={() => handleOpenForm()} className="cursor-pointer">
+                        <Plus className="h-4 w-4" /> Add new
                     </Button>
                 </div>
                 <div className="rounded-md border">
@@ -142,12 +141,15 @@ export default function CategoriesPage({ categories }: { categories: PaginatedRe
                         </TableHeader>
                         <TableBody>
                             {categories.data.map((category: Category) => (
-                                <TableRow key={category.id}>
+                                <TableRow
+                                    key={category.id}
+                                    className={recentlyUpdatedId === category.id ? 'bg-green-50 transition-colors duration-500' : ''}
+                                >
                                     <TableCell>{category.name}</TableCell>
                                     <TableCell className="text-center">{category.posts_count}</TableCell>
                                     <TableCell>
                                         <div className="flex gap-2">
-                                            <Button variant="outline" size="sm" onClick={() => handleEdit(category)} className="cursor-pointer">
+                                            <Button variant="outline" size="sm" onClick={() => handleOpenForm(category)} className="cursor-pointer">
                                                 Edit
                                             </Button>
                                             <TooltipProvider delayDuration={0}>
@@ -222,7 +224,7 @@ export default function CategoriesPage({ categories }: { categories: PaginatedRe
                     onConfirm={confirmDelete}
                     loading={processing}
                     title="Confirm Deletion"
-                    description="Are you sure you want to delete this category? This action cannot be undo."
+                    description="Are you sure you want to delete this category? This action cannot be undone."
                     confirmLabel="Delete"
                     confirmVariant="destructive"
                 />

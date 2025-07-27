@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Category, Post } from '@/types';
+import { formatDatetimeLocal } from '@/utils/datetime';
 import { LoaderCircle } from 'lucide-react';
 
 interface PostFormProps {
@@ -68,7 +69,13 @@ export default function PostFormModal({
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="published_at">Published At</Label>
-                        <Input id="published_at" name="published_at" type="datetime-local" value={data.published_at} onChange={onChange} />
+                        <Input
+                            id="published_at"
+                            name="published_at"
+                            type="datetime-local"
+                            value={formatDatetimeLocal(data.published_at, 'yyyy-MM-ddTHH:mm')}
+                            onChange={onChange}
+                        />
                     </div>
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={onClose} className="cursor-pointer" disabled={processing}>
