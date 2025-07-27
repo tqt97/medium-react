@@ -24,6 +24,7 @@ export default function CategoriesPage({ categories }: { categories: PaginatedRe
     const [showModal, setShowModal] = useState(false);
     const [editCategory, setEditCategory] = useState<Category | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; id?: number }>({ show: false });
+    const [recentlyUpdatedId, setRecentlyUpdatedId] = useState<number | null>(null);
     const {
         data,
         setData,
@@ -69,9 +70,11 @@ export default function CategoriesPage({ categories }: { categories: PaginatedRe
                 preserveScroll: true,
                 preserveState: true,
                 onSuccess: () => {
+                    setRecentlyUpdatedId(editCategory.id);
                     setShowModal(false);
                     reset();
                     notify('success', 'Category updated successfully');
+                    setTimeout(() => setRecentlyUpdatedId(null), 3000);
                 },
                 onError: (errors) => {
                     notify('error', errors.name || 'Failed to update category');
@@ -138,7 +141,10 @@ export default function CategoriesPage({ categories }: { categories: PaginatedRe
                         </TableHeader>
                         <TableBody>
                             {categories.data.map((category: Category) => (
-                                <TableRow key={category.id}>
+                                <TableRow
+                                    key={category.id}
+                                    className={recentlyUpdatedId === category.id ? 'bg-green-50 transition-colors duration-500' : ''}
+                                >
                                     <TableCell>{category.name}</TableCell>
                                     <TableCell className="text-center">{category.posts_count}</TableCell>
                                     <TableCell>
