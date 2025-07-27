@@ -2,7 +2,14 @@ export function formatDatetimeLocal(value: string | Date | null | undefined, for
     if (!value) return '';
 
     const date = typeof value === 'string' ? new Date(value) : value;
-    if (isNaN(date.getTime())) return '';
+    if (isNaN(date.getTime())) {
+        console.warn(
+            `[formatDatetimeLocal] Invalid date value:`,
+            value,
+            '- returning empty string.'
+        );
+        return '';
+    }
 
     const pad = (n: number) => n.toString().padStart(2, '0');
 
