@@ -6,6 +6,7 @@ import AppLayout from '@/layouts/app-layout';
 import { Category, PaginatedResponse, Post, type BreadcrumbItem } from '@/types';
 import { notify } from '@/utils/notify';
 import { Head, useForm } from '@inertiajs/react';
+import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import CommentsModal from './parts/comments';
 import PostFormModal from './parts/form';
@@ -56,6 +57,7 @@ export default function PostsPage({ posts, categories }: PostsPageProps) {
 
     const handleOpenForm = (post?: Post) => {
         setEditPost(post ?? null);
+        reset();
         setData({
             title: post?.title || '',
             content: post?.content || '',
@@ -148,9 +150,9 @@ export default function PostsPage({ posts, categories }: PostsPageProps) {
             <Head title="Posts" />
             <div className="flex flex-col gap-4 p-4">
                 <div className="mb-4 flex items-center justify-between">
-                    <h1 className="text-2xl font-bold">Posts</h1>
+                    <h1 className="text-xl font-bold">Posts</h1>
                     <Button onClick={() => handleOpenForm()} className="cursor-pointer">
-                        Add Post
+                        <Plus className="h-4 w-4" /> Add new
                     </Button>
                 </div>
                 <div className="rounded-md border">
@@ -160,7 +162,7 @@ export default function PostsPage({ posts, categories }: PostsPageProps) {
                                 <TableHead>Title</TableHead>
                                 <TableHead>Category</TableHead>
                                 <TableHead>Published At</TableHead>
-                                <TableHead>Comments</TableHead>
+                                <TableHead className="px-5">Comments</TableHead>
                                 <TableHead>Actions</TableHead>
                             </TableRow>
                         </TableHeader>
